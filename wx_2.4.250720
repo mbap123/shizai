@@ -1,0 +1,546 @@
+begin,WX,Num,Time_Table = Dialog.GetConfigV4(SZEnv['rpa'], "初始化", [{"name":"WX","label":"WX","options":["c","e","i","f","w","k","j"],"valueArray":[],"isRequired":"0","type":"MultiSelect","number":1,"id":"PxI6q"},{"name":"Num","label":"Num","tips":"请输入文本内容","value":"","isRequired":"0","type":"TextBox","number":2,"id":"Z0uBh"},{"name":"Time_Table","label":"表格","row":1,"column":["x","y","m","n"],"valueTable":[{"x":"7","y":"19","m":"12","n":"36"}],"type":"Table","number":3,"id":"ORxk9"},{"type":"runBy","value":2},{"type":"ExeMode","value":"1"}], "LbkO7xMA", 0, 3, 0, var_ret=0, delay_before_new=0, delay_after_new=0, exc_retry=0, retry_count=1, retry_interval=1, skip_err=0, log_exc=1)  
+#@_插入代码 "封装函数" 
+import pyautogui  
+import pyperclip
+import time
+import random
+
+
+def print(message: object) -> object:
+    Basic.DebugOutput(SZEnv['rpa'], message)
+
+
+# @
+# @_插入代码 "封装查找图像-cz"
+def cz(image_name: str) -> dict:
+    """
+    封装RPA图像查找操作，支持传入可变的图像名称参数
+
+    Args:
+        image_name: 图像名称，将替换原路径中的"qf_联系人"部分
+
+    Returns:
+        图像查找结果字典
+    """
+    full_path = f"{BASE_PATH}{image_name}.png"
+
+    czd = Image.Find_V1(
+        SZEnv['rpa'],
+        full_path,
+        0.95,
+        var_ret=0,
+        delay_before_new=0.2,
+        delay_after_new=0.05,
+        exc_retry=1,
+        retry_count=3,
+        retry_interval=1,
+        skip_err=0,
+        log_exc=1
+    )
+
+    return czd
+
+
+# @
+# @_插入代码 "封装点击函数-dj"
+def dj(image_name: str):
+    """
+    封装RPA图像点击操作，支持传入可变的图像名称参数
+
+    Args:
+        image_name: 图像名称，将替换原路径中的"搜索"部分
+    """
+    full_path = f"{BASE_PATH}{image_name}.png"
+
+    Image.Click_V2(
+        SZEnv['rpa'],
+        full_path,
+        "center",
+        0.95,
+        1,
+        delay_before_new=0.2,
+        delay_after_new=0.05,
+        skip_err=0,
+        log_exc=1
+    )
+
+
+
+
+def wf_im(image_path):
+    imaall_path = f"{BASE_PATH}{image_path}.png"
+    result_and_coordinates = Image.Wait_V1(SZEnv['rpa'], imaall_path, 0.95, 20, var_ret=0, delay_before_new=0,
+                                           delay_after_new=0, exc_retry=0, retry_count=1, retry_interval=1, skip_err=0,
+                                           log_exc=1)
+    return result_and_coordinates
+
+
+def click_offset(image_name: str, offset_x=None, offset_y=None, clicks: int = 1) -> None:
+    """结合图像定位与点击操作，支持多种参数形式
+    
+    click_offset('shizai')
+    click_offset('shizai', -5, +10)  # x 偏移 -5，y 偏移 +10
+    click_offset('shizai', (0, 15), (-5, 10))  # x 随机偏移 0~15，y 随机偏移 -5~10
+    click_offset('shizai', (0, 15), (-5, 10),2)  # x 随机偏移 0~15，y 随机偏移 -5~10，双击
+    
+    """
+    full_path = f"{BASE_PATH}{image_name}.png"
+    loca = Image.Location_V1(
+        SZEnv['rpa'],
+        full_path,
+        0.95,
+        var_ret=0,
+        delay_before_new=0.2,
+        delay_after_new=0.05,
+        exc_retry=1,
+        retry_count=3,
+        retry_interval=1,
+        skip_err=0,
+        log_exc=1
+    )
+    center_x = loca['x']
+    center_y = loca['y']
+    
+    # 处理偏移量参数
+    # import random
+    
+    # 处理 offset_x
+    if offset_x is None:
+        target_x = center_x
+    elif isinstance(offset_x, (int, float)):
+        target_x = center_x + offset_x
+    elif isinstance(offset_x, tuple) and len(offset_x) == 2:
+        min_x, max_x = offset_x
+        target_x = center_x + random.uniform(min_x, max_x)
+    else:
+        raise ValueError("offset_x 参数格式不正确")
+    
+    # 处理 offset_y
+    if offset_y is None:
+        target_y = center_y
+    elif isinstance(offset_y, (int, float)):
+        target_y = center_y + offset_y
+    elif isinstance(offset_y, tuple) and len(offset_y) == 2:
+        min_y, max_y = offset_y
+        target_y = center_y + random.uniform(min_y, max_y)
+    else:
+        raise ValueError("offset_y 参数格式不正确")
+    
+    pyautogui.click(target_x, target_y, clicks=clicks, interval=0.1, button='left')
+    # print(f"图像定位中心: ({center_x:.1f}, {center_y:.1f})")
+    # print(f"最终点击位置: ({target_x:.1f}, {target_y:.1f})")
+
+
+
+
+ 
+#@ 
+#@_插入代码 "def start_wx(key)" 
+def start_wx(key):  
+    """启动微信客户端"""
+    hotkeys = {
+        'e': ('alt', 'space'),   # Mr.s-空格
+        'i': ('alt', 'e'),        # imy-e
+        'c': ('alt', 'c'),        # 楚楚-c
+        'f': ('alt', 'f'),        # 佘墨-f
+        'r': ('alt', 'r'),        # 文雯-r
+        'w': ('alt', 'w'),        # wy-w
+        'j': ('alt', 'j'),        # 谷-j
+        'k': ('alt', 'k')         # 林俊文-k
+    }
+    
+    if key in hotkeys:
+        pyautogui.hotkey(*hotkeys[key])
+        time.sleep(round(random.uniform(0.2, 1.1), 1))
+        return key
+    return None
+    
+# 外部定义的招呼语模板
+greet_sends = {
+    "greet1": "{surname}哥，你好，朋友介绍的，有事请教一下，麻烦通过一下",
+    "greet2": "{surname}哥，你好，朋友推荐的",
+    "greet3": "{surname}哥，朋友介绍的",
+    "greet4": "{surname}哥，我是管家，麻烦通过一下",
+    "no_name": "你好，朋友推荐，麻烦通过一下"  # 无姓名时的默认模板
+} 
+#@ 
+#@_插入代码 "小窗口" 
+def process_result(key, phone_number, nickname, remark):  
+    """
+    根据随机数结果返回三种可能的结果之一，并打印处理后的手机号码
+    :param key: 来源标识
+    :param phone_number: 处理后的手机号码
+    :param remark: 备注信息
+    :return: 处理结果字符串
+    """
+    global reboot
+    if reboot == 0:
+        try:
+            key = start_wx(key)
+            if not cz(key):
+                raise ValueError(f"无法找到微信窗口: {key}")
+        except:
+            key = start_wx(key)
+            print('二次启动')
+        reboot = 1
+
+    if reboot == 1:
+        print(f'当前的微信：{key}')
+        if cz(key):
+            pyperclip.copy(phone_number)
+            click_offset('搜索',(-3,150),(-5,5))
+            pyautogui.hotkey('ctrl', 'v')
+            time.sleep(round(random.uniform(2.1, 3.6), 1))
+            click_offset('增加',(-10,120),(-30,30))
+            wf_im('增加到通讯录')
+            if wf_im('增加到通讯录')['status'] == 'success':
+                cz('1')
+                if not cz('1'):
+                    print('非男性，跳过')
+                    # time.sleep(round(random.uniform(1.1, 3.6), 1))
+                    # click_offset('增加到通讯录',(579,880),(-200,500))
+                    # time.sleep(round(random.uniform(1.1, 5.6), 1))
+                    pyautogui.hotkey('esc')
+                    if cz('搜索') is False:
+                        time.sleep(round(random.uniform(1.1, 3.6), 1))
+                        pyautogui.hotkey('esc')
+                    time.sleep(round(random.uniform(1.1, 5.6), 1))
+                    return f"{key} 跳过", reboot
+
+                click_offset('增加到通讯录',(-50,50),(-15,15))
+                wf_im('发送好友申请')
+                if wf_im('发送好友申请')['status'] == 'success':
+                    # 打招呼语
+                    pyperclip.copy(nickname)
+                    click_offset('发送好友申请',(1,20),(63,78),3)
+                    time.sleep(round(random.uniform(0.3, 1.2), 1))
+                    pyautogui.hotkey('ctrl', 'v')
+                    # 备注
+                    pyperclip.copy(remark)
+                    click_offset('备注', (-3,8), (63,78), 3)
+                    time.sleep(round(random.uniform(0.3, 1.2), 1))
+                    pyautogui.hotkey('ctrl', 'v')
+                    time.sleep(round(random.uniform(1.2, 3.5), 1))
+                    click_offset('小窗口确定', (-50,50), (-20,20), 3)
+                    # dj('小窗口确定')
+                    # pyautogui.hotkey('esc')
+                    click_offset(key, (-28,28), (53,110))
+                    time.sleep(round(random.uniform(0.8, 1.2), 1))
+                    start_wx(key)
+                    reboot = 0
+                    return f"{key}", reboot
+                else:
+                    print(f"{phone_number} 自动通过{key}")
+                    start_wx(key)
+                    reboot = 0
+                    return f"{key} 自动通过", reboot
+            else:
+                cz('确定')
+                if cz('确定'):
+                    print(f"异常：  {phone_number} 账户未查找到 {key}")
+                    pyautogui.hotkey('esc')
+                    click_offset(key, (-28,28), (53,110))
+                    reboot = 1
+                    print('xxx')
+                    return f"{key} 账户未查找到", reboot
+ 
+#@ 
+#@_插入代码 "函数集合" 
+
+import pandas as pd  
+import random
+from datetime import datetime
+import time
+import re
+
+
+
+def wx_to_dict(WX, Num):
+    # 将数字转为字符串，并逐位转换为整数列表，自定义对话格式化
+    digits = [int(d) for d in str(Num)]
+    
+    # 检查长度是否匹配
+    if len(WX) != len(digits):
+        raise ValueError("列表 WX 和数字 Num 的长度不一致！")
+    
+    # 构造字典
+    return dict(zip(WX, digits))
+
+
+def read_excel(file_path):
+    """
+    读取指定路径的 Excel 文件
+    :param file_path: Excel 文件的路径
+    :return: 包含文件数据的 DataFrame，如果读取失败则返回 None
+    """
+    try:
+        df = pd.read_excel(file_path)
+        return df
+    except FileNotFoundError:
+        print("错误: 文件未找到!")
+    except Exception as e:
+        print(f"错误: 发生了一个未知错误: {e}")
+    return None
+
+
+def check_columns(df):
+    """
+    检查 '源' 列和去除 NaN 后的 '时间' 列的长度是否相等
+    :param df: 数据 DataFrame
+    :return: 如果 '源' 列和有效 '时间' 列长度相等返回 False，否则返回 True
+    """
+    valid_time_length = len(df['时间'].dropna())
+    if len(df['源']) == valid_time_length:
+        print("源列消耗殆尽")
+        return False
+    return True
+
+
+def get_next_number(df):
+    """
+    获取 '源' 列中对应去除 NaN 后的 '时间' 列最后一行数据的下一行的数据
+    :param df: 数据 DataFrame
+    :return: 下一个待处理的 '源' 列数据
+    """
+    valid_time_length = len(df['时间'].dropna())
+    return df['源'].iloc[valid_time_length]
+
+
+def get_current_time():
+    """
+    获取当前时间，格式为 'YYYY-MM-DD HH:MM:SS'
+    :return: 当前时间的字符串
+    """
+    return pd.Timestamp(datetime.now())
+
+
+def update_and_save_df(df, file_path, next_number, key, current_time):
+    """
+    更新 DataFrame 中 '来源' 列和 '时间' 列的数据，并将更新后的 DataFrame 保存到指定文件
+    :param df: 数据 DataFrame
+    :param file_path: Excel 文件的路径
+    :param next_number: 待处理的 '源' 列数据
+    :param key: 用于更新来源列的值
+    :param current_time: 当前时间的字符串
+    """
+    index = df[df['源'] == next_number].index[0]
+    df.at[index, '来源'] = key
+    df.at[index, '时间'] = current_time
+    try:
+        df.to_excel(file_path, index=False)
+    except Exception as e:
+        print(f"保存文件时出错: {e}")
+
+
+
+def processed_next_number(input_str):
+    # 定义匹配手机号码的正则表达式模式
+    # 手机号码通常以 1 开头，第二位数字范围是 3 到 9，后面再跟 9 位数字
+    pattern = r'1[3-9]\d{9}'
+    # 使用 re.search 函数在输入字符串中查找第一个匹配该模式的内容
+    # 如果找到匹配项，它会返回一个匹配对象；若未找到，则返回 None
+    match = re.search(pattern, input_str)
+    # 检查是否找到了匹配的手机号码
+    if match:
+        # 如果找到了，使用 group() 方法从匹配对象中提取出具体的手机号码
+        return match.group()
+    # 如果未找到匹配的手机号码，返回 None
+    return None
+
+
+def generate_prefix():
+    """
+    生成带有 G 前缀和当天日期（mmdd 格式）的编号
+    """
+    now = datetime.now()
+    date_str = now.strftime("%m%d")
+    return f"G{date_str}"
+
+
+def count_source_by_today(df):
+    """
+    统计表格里当天日期各来源的记录次数
+    """
+    today = datetime.now().strftime("%Y-%m-%d")
+    # 过滤掉时间列中的 NaN 值，并创建一个副本
+    valid_df = df[df['时间'].notna()].copy()
+    # 将时间列转换为日期格式并提取日期部分
+    valid_df['date'] = pd.to_datetime(valid_df['时间']).dt.date
+    # 筛选出日期为当天的记录
+    today_df = valid_df[valid_df['date'] == pd.Timestamp(today).date()]
+    # 按来源列分组并计数
+    source_count = today_df.groupby('来源').size().to_dict()
+    return source_count
+
+
+def process_entry(entry, greet_name="greet1"):
+    """
+    处理单个条目并生成招呼语
+
+    参数:
+    entry: 输入字符串，格式为"前缀_手机号码[姓名]"
+    greet_name: 选择的模板名称，默认为"greet1"
+
+    返回:
+    格式化后的招呼语字符串
+    """
+    # 拆分前缀和剩余部分
+    parts = entry.split('_', 1)
+    if len(parts) < 2:
+        return entry
+
+    prefix, rest = parts
+
+    # 提取手机号码（前11位数字）
+    phone = ""
+    for i, char in enumerate(rest):
+        if char.isdigit() and len(phone) < 11:
+            phone += char
+        else:
+            break
+
+    # 提取姓名部分（手机号后的非数字字符）
+    name_part = rest[len(phone):]
+
+    # 获取姓氏（第一个非数字字符）
+    surname = next((c for c in name_part if not c.isdigit()), None)
+
+    # 默认选择模板
+    greet = greet_sends.get(greet_name, greet_sends["greet1"])
+
+    # 格式化输出
+    if surname:
+        return f"{greet.format(surname=surname)}"
+    else:
+        return f"{greet_sends['no_name']}"
+
+
+# 示例字典
+# my_dict = {'i': 5, 'e': 3, 'j': 11}
+# time_dict = {'x': 2.3, 'y': 3.9, 'm': 8, 'n': 15}
+# reboot = 0
+
+ 
+#@ 
+#@_插入代码 "主1.1" 
+def ceshi(my_dict, time_dict, file_path):  
+    # 按照值从大到小对字典进行排序
+    sorted_dict = dict(sorted(my_dict.items(), key=lambda item: item[1], reverse=True))
+    # 获取字典中所有值的最大值
+    max_value = max(sorted_dict.values())
+    # 初始化每个键的输出次数计数器
+    count_dict = {key: 0 for key in sorted_dict}
+    # 从 1 到最大值进行遍历
+    for i in range(1, max_value + 1):
+        keys = list(sorted_dict.keys())
+        key_index = 0
+        while key_index < len(keys):
+            # global key
+            key = keys[key_index]
+            if count_dict[key] < sorted_dict[key]:
+                # 遍历排序后字典中的每个键值对
+                # for key, value in sorted_dict.items():
+                # 如果当前值大于等于当前循环的索引 i
+                # if value >= i:
+                df = read_excel(file_path)
+                if df is None:
+                    remaining_dict = {key: my_dict[key] - count_dict[key] for key in my_dict}
+                    print("各键还剩余的输出次数：", remaining_dict)
+                    return
+                if not check_columns(df):
+                    remaining_dict = {key: my_dict[key] - count_dict[key] for key in my_dict}
+                    print("各键还剩余的输出次数：", remaining_dict)
+                    return
+                next_number = get_next_number(df)
+                # 统计表格里面待处理的 '源' 列数据剩余个数
+                valid_time_length = len(df['时间'].dropna())
+                remaining_source_count = len(df['源']) - valid_time_length
+                # print(f"表格里面待处理的 '源' 列数据剩余个数: {remaining_source_count}")
+
+                print(f"剩{remaining_source_count}:     {next_number}")
+                # 增加打印下一个待处理的 '源' 列数据对应的‘招呼’
+                # nickname = df[df['源'] == next_number]['招呼'].values[0]
+                nickname = process_entry(next_number)
+                print(nickname)
+
+                prefix = generate_prefix()
+                remark = f"{prefix}{next_number}"
+                
+                phone_number = processed_next_number(str(next_number))
+                # print(f'即将进入函数的状态值：{reboot}')
+                # ******************************小窗口***************************************
+                result, repeat_key = process_result(key, phone_number, nickname, remark)
+
+                # print(f"处理结果: {result}和状态：{repeat_key}")
+
+                current_time = get_current_time()
+                index = df[df['源'] == next_number].index[0]
+                # 在赋值前将列转换为字符串类型
+                # df['来源'] = df['来源'].astype(str)
+                df.at[index, '来源'] = result
+                df.at[index, '时间'] = current_time
+
+                update_and_save_df(df, file_path, next_number, result, current_time)
+                if repeat_key == 0:
+                    count_dict[key] += 1
+                    key_index += 1
+                    # 从 x 到 y 区间随机选择一个值作为休息时间
+                    rest_time_single = random.uniform(time_dict['x'], time_dict['y'])
+                    time.sleep(rest_time_single)
+                    print(f'小倒计时:{rest_time_single:.1f}')
+                else:
+                    # print(f"{key} 将再次输出")
+                    pass
+
+            else:
+                key_index += 1
+
+        # 输出各键的累计输出次数
+        print(f"输出次数：{count_dict}")
+        # 计算各键还剩余的输出次数
+        remaining_dict = {key: my_dict[key] - count_dict[key] for key in my_dict}
+        print(f"剩余输出次数：{remaining_dict}")
+        # 判断所有键的剩余次数是否都为0
+        if all(value == 0 for value in remaining_dict.values()):
+            return
+
+        # 统计当天日期来源的次数
+        source_count = count_source_by_today(df)
+        print(f"{datetime.now().strftime('%Y-%m-%d')}日志: {source_count}")
+
+
+
+        # 从 m 到 n 区间随机选择一个值作为每批次输出后的休息时间
+        rest_time_batch = random.uniform(time_dict['m'], time_dict['n'])
+        # 分 5 次打印倒计时
+        interval = rest_time_batch / 5
+        for j in range(5):
+            remaining_time = rest_time_batch - j * interval
+            print(f"下一批次输出还剩 {remaining_time:.1f} 秒")
+            time.sleep(interval) 
+#@ 
+#@_插入代码 "变量和启动" 
+global reboot  
+reboot = 0
+file_path = r'E:\zagato\8888.xlsx'
+BASE_PATH = "D:\\32897\\Pictures\\shizai1.0\\"
+# BASE_PATH = "C:\\Users\\roy lsa\\Pictures\\shizai1.0\\"
+
+
+# 自定义界面输出
+my_dict = wx_to_dict(WX, Num)
+time_dict = {key: int(value) for key, value in Time_Table[0].items()}
+print(my_dict) 
+print(time_dict) 
+
+# 启动全屏
+click_offset('shizai',(-5,5),(-5,5))
+pyautogui.hotkey('win', 'up')
+time.sleep(random.uniform(1.3, 2.5))
+
+# 启动RPA
+ceshi(my_dict, time_dict, file_path) 
+#@ 
+#@_备注 
+# "账户异常时需修复" 
+#@ 
