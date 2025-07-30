@@ -1,0 +1,269 @@
+#@_插入代码 "开头" 
+def content(call):  
+    with open(r'E:\zagato\8群发.txt', 'r', encoding='utf-8') as file:
+        file_content = file.read()
+
+    # 获取当前时间
+    now = datetime.now()
+    hour = now.hour
+
+    # 根据当前时间返回相应的问候语
+    if 5 <= hour < 10:
+        time_w = "早上好！"
+    elif 10 <= hour < 12:
+        time_w = "上午好！"
+        # time_w = "上午好，空调虽爽，莫贪凉久！\n\n"
+    elif 12 <= hour < 14:
+        time_w = "中午好！"
+        # time_w = "中午好！空调虽爽，莫贪凉久！\n\n"
+    elif 14 <= hour < 19:
+        time_w = "下午好！"
+        # time_w = "下午好！云雨多变，携伞从容！"
+    else:
+        time_w = "晚上好！"
+        
+    # 周末专用
+    # if 5 <= hour < 19:
+    #     time_w = "周末愉快！"
+    # else:
+    #     time_w = "晚上好！"
+        
+        
+        
+
+    # 拼接内容
+    combined_text = f"{call} {time_w}\n\n{file_content}"
+    pyperclip.copy(combined_text) 
+#@ 
+#@_插入代码 "主" 
+import pyautogui  
+import pyperclip
+import time
+import random
+from datetime import datetime
+import pandas as pd
+import re
+
+BASE_PATH = "D:\\32897\\Pictures\\shizai1.0\\"
+file_path_1 = r"E:\zagato\555.xlsx"
+file_path_2 = r"E:\zagato\566.xlsx"
+
+
+def print(message):
+    Basic.DebugOutput(SZEnv['rpa'], message)
+
+
+def cz(image_name: str) -> dict:
+    '''
+    封装RPA图像查找操作，支持传入可变的图像名称参数
+
+    Args:
+        image_name: 图像名称，将替换原路径中的"qf_联系人"部分
+
+    Returns:
+        图像查找结果字典
+    '''
+    full_path = f"{BASE_PATH}{image_name}.png"
+
+    czd = Image.Find_V1(
+        SZEnv['rpa'],
+        full_path,
+        0.95,
+        var_ret=0,
+        delay_before_new=0.2,
+        delay_after_new=0.05,
+        exc_retry=1,
+        retry_count=3,
+        retry_interval=1,
+        skip_err=0,
+        log_exc=1
+    )
+
+    return czd
+
+
+def click_offset(image_name: str, offset_x=None, offset_y=None, clicks: int = 1) -> None:
+    """结合图像定位与点击操作，支持多种参数形式
+
+    click_offset('shizai')
+    click_offset('shizai', -5, +10)  # x 偏移 -5，y 偏移 +10
+    click_offset('shizai', (0, 15), (-5, 10))  # x 随机偏移 0~15，y 随机偏移 -5~10
+    click_offset('shizai', (0, 15), (-5, 10),2)  # x 随机偏移 0~15，y 随机偏移 -5~10，双击
+
+    """
+    full_path = f"{BASE_PATH}{image_name}.png"
+    loca = Image.Location_V1(
+        SZEnv['rpa'],
+        full_path,
+        0.95,
+        var_ret=0,
+        delay_before_new=0.2,
+        delay_after_new=0.05,
+        exc_retry=1,
+        retry_count=3,
+        retry_interval=1,
+        skip_err=0,
+        log_exc=1
+    )
+    center_x = loca['x']
+    center_y = loca['y']
+
+    # 处理偏移量参数
+    # import random
+
+    # 处理 offset_x
+    if offset_x is None:
+        target_x = center_x
+    elif isinstance(offset_x, (int, float)):
+        target_x = center_x + offset_x
+    elif isinstance(offset_x, tuple) and len(offset_x) == 2:
+        min_x, max_x = offset_x
+        target_x = center_x + random.uniform(min_x, max_x)
+    else:
+        raise ValueError("offset_x 参数格式不正确")
+
+    # 处理 offset_y
+    if offset_y is None:
+        target_y = center_y
+    elif isinstance(offset_y, (int, float)):
+        target_y = center_y + offset_y
+    elif isinstance(offset_y, tuple) and len(offset_y) == 2:
+        min_y, max_y = offset_y
+        target_y = center_y + random.uniform(min_y, max_y)
+    else:
+        raise ValueError("offset_y 参数格式不正确")
+
+    pyautogui.click(target_x, target_y, clicks=clicks, interval=0.1, button='left')
+
+
+
+def do_excel(file_path, call_mode="old", random_delay_range=(15, 32)):
+    # 读取Excel文件，显式指定“时间”列的数据类型为字符串
+    df = pd.read_excel(file_path, dtype={'时间': str})
+
+    for index, row in df.iterrows():
+        # 如果B列为空或NaN，则跳过该行
+        if pd.isna(row['B']) or row['B'].strip() == '':
+            print(f"跳过第{index + 1}行，B列为空")
+            continue
+
+        # 如果第三列已经有时间值，则跳过该行
+        if pd.notna(row['时间']) and row['时间'].strip() != '':
+            print(f"跳过第{index + 1}行，已有时间值：{row['时间']}")
+            continue
+
+        b_data = row['B']
+
+        if call_mode == "old":
+            # 提取开头字母 (G/F)
+            if b_data.startswith('G') or b_data.startswith('F'):
+                prefix = b_data[0]
+            else:
+                prefix = ''
+
+            # 提取姓名部分（手机号后的文本）
+            match = re.search(r'([^\d_]+)$', b_data)
+            if match:
+                name_part = match.group(1)
+            else:
+                name_part = ''
+
+            first_char = name_part[0] if len(name_part) > 0 else None
+
+            # 根据开头字母生成称呼
+            if prefix == 'G':
+                call = f"{first_char}哥" if first_char else "哥"
+            elif prefix == 'F':
+                call = f"{first_char}姐" if first_char else "哥"
+            else:
+                call = "哥"
+        elif call_mode == "new":
+            # 直接获取C列的称呼作为call
+            call = row['C'] if pd.notna(row['C']) else ''
+
+        # 调用新函数处理随机数逻辑
+        updated, random_num = do_mess(b_data, call)
+
+        # 如果需要更新数据，在第二列数据前加X
+        if updated:
+            df.at[index, 'B'] = f"X{b_data}"
+            updated_data = f"X{b_data}"
+            current_time = '---'
+
+        else:
+            updated_data = b_data
+            current_time = datetime.now().strftime("%Y/%m/%d %H:%M")
+
+        print(f"{updated_data}，{current_time}")
+
+        # 更新第三列
+        df.at[index, '时间'] = current_time
+
+        # 统计信息
+        total_rows = df.shape[0]
+        remaining_rows = total_rows - index - 1
+        df.to_excel(file_path, index=False)
+
+        # 从参数中获取随机延迟范围
+        random_delay = random.randint(*random_delay_range)
+        print(f"共{total_rows}个，剩{remaining_rows}个             等待{random_delay}s")
+        print("-" * 50)
+        time.sleep(random_delay)
+
+
+def do_mess(b_data, call):
+    pyperclip.copy(b_data)
+    click_offset('搜索',(5,20),(-5,5))
+    pyautogui.hotkey('ctrl', 'v')
+    time.sleep(random.uniform(0.4, 1.1))
+    if cz('qf_联系人'):
+        pyautogui.hotkey('enter')
+        time.sleep(random.uniform(0.9, 1.9))
+        content(call)
+        random.uniform(0.5, 0.9)
+        pyautogui.hotkey('ctrl', 'v')
+        time.sleep(random.randint(1, 4))
+        pyautogui.hotkey('enter')
+    else:
+        pyautogui.hotkey('esc')
+        random_num = 9
+        return random_num > 7, random_num
+
+    if cz('mod_1.0叹号'):
+        click_offset('mod_1.1.大三点')
+        click_offset('mod_1.2.增加', (-100,-130), (-20,20))
+        click_offset('mod_1.3.小三点')
+        click_offset('mod_1.4.设置备注')
+
+        # 小窗口
+        click_offset('mod_1.5.备注名', (1,20), (68,74))
+        time.sleep(random.randint(1, 3))
+        pyperclip.copy('X')
+        pyautogui.hotkey('home')
+        pyautogui.hotkey('ctrl', 'v')
+        time.sleep(random.randint(1, 3))
+        click_offset('小窗口确定')
+        pyautogui.hotkey('esc')
+        pyautogui.hotkey('esc')
+        random_num = 9
+    else:
+        random_num = 3
+    return random_num > 7, random_num
+
+
+click_offset('shizai')
+pyautogui.hotkey('win', 'up')
+click_offset('wx')
+
+# 通过调用 do_excel 函数并传入不同的参数来灵活选择使用哪套逻辑
+
+ 
+#@ 
+#@_插入代码 "555" 
+random_delay_range = (12, 27)  # 间隔时间  
+do_excel(file_path_1, call_mode="old")  # 使用旧的称呼生成逻辑 
+#@ 
+# #@_插入代码 "566(手动填写)" 
+# random_delay_range = (15, 32)  # 间隔时间  
+# do_excel(file_path_2, call_mode="new")  # 使用新的称呼生成逻辑 
+# #@ 
