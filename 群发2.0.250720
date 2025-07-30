@@ -1,0 +1,33 @@
+#@_插入代码 "date初始化" 
+date = []  
+last_a = None 
+#@ 
+Element.Click_V5(SZEnv['rpa'], elementsFormatNew(SHIZAI_ELEMENT_DICT["5XwtCAPtm3"]["selector"]), None, 0, 1, 1, 1, {"cursorPosition": 0, "offset": {"x": 0, "y": 0}, "random": 0}, 1, delay_before_new=0.2, delay_after_new=0.05, timeout_new=30, exc_retry=1, retry_count=3, retry_interval=1, skip_err=0, log_exc=1)  
+while True:
+    [昵称, 昵称个数] = Element.SimilarElementList(SZEnv['rpa'], "default", elementsFormatNew(SHIZAI_ELEMENT_DICT["ZXuTjlIQyt"]["selector"]), None, "", "", 0, None, "gettext", 0, "", 0, 1, -1, var_ret=0, delay_before_new=0.2, delay_after_new=0.05, timeout_new=30, exc_retry=1, retry_count=3, retry_interval=1, skip_err=0, log_exc=1)  
+    [备注, 元素个数] = Element.SimilarElementList(SZEnv['rpa'], "default", elementsFormatNew(SHIZAI_ELEMENT_DICT["099PGGzqDR"]["selector"]), None, "", "", 0, None, "gettext", 0, "", 0, 1, -1, var_ret=0, delay_before_new=0.2, delay_after_new=0.05, timeout_new=30, exc_retry=1, retry_count=3, retry_interval=1, skip_err=0, log_exc=1)  
+    Basic.DebugOutput(SZEnv['rpa'], 备注)  
+    Keyboard.PressNew(SZEnv['rpa'], "34", "press", [], 1, delay_before_new=0, delay_after_new=0, exc_retry=0, retry_count=1, retry_interval=1, skip_err=0, log_exc=1)  
+    Basic.Delay_V1(SZEnv['rpa'], 1)  
+    #@_插入代码 "zip" 
+    if last_a == 备注[-1]:  
+        break
+    
+    last_a = 备注[-1]
+    for vue1,vue2 in zip(昵称,备注):
+        date.append([vue1,vue2,'']) 
+    #@ 
+#@_插入代码 "df" 
+import pandas as pd  
+
+# 将列表转换为 DataFrame
+df = pd.DataFrame(date, columns=['A','B','时间'])
+df = df.drop_duplicates()
+
+# 写入到 Excel 文件
+output_path = r"E:\zagato\555.xlsx"
+df.to_excel(output_path, index=False)
+
+Basic.DebugOutput(SZEnv['rpa'], df)
+Basic.DebugOutput(SZEnv['rpa'], df.shape[0])  
+#@ 
